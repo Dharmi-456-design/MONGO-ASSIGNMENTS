@@ -128,3 +128,58 @@ exports.getNoteById = async (req, res) => {
     });
   }
 };
+
+// @desc    Replace a note completely
+// @route   PUT /api/notes/:id
+// @access  Public
+exports.replaceNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, category, isPinned } = req.body;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Note ID",
+        data: null
+      });
+    }
+
+    // Validation: Title and content required for full replacement
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and content are required for full replacement",
+        data: null
+      });
+    }
+
+    // PUT means full replacement. Fields not provided will be reset/set to defaults by Mongoose.
+    const note = await Note.findOneAndReplace(
+      { _id: id },
+      { title, content, category, isPinned },
+      { new: true, overwrite: true, runValidators: true }
+    );
+
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note replaced successfully",
+      data: note
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      data: null
+    });
+  }
+};
